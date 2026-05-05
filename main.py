@@ -1,13 +1,15 @@
 import streamlit as st
 import urllib.parse
-from datetime import datetime, timedelta
+from datetime import datetime
 
-# 1. IDENTIDADE VISUAL E CONFIGURAÇÃO TEAM MUNIZ
-st.set_page_config(page_title="Team Muniz - Agendamento", layout="centered", page_icon="📅")
+# 1. CONFIGURAÇÃO DE TELA E IDENTIDADE VISUAL TEAM MUNIZ
+st.set_page_config(page_title="Team Muniz - Agendamento Real", layout="centered", page_icon="📅")
 
-MEU_EMAIL_AGENDA = "fabiomuniz.personal@gmail.com" # SEU E-MAIL DA AGENDA
 MEU_WHATSAPP = "5511987913509"
+# Seu link oficial do Google Appointment Slots
+LINK_AGENDA_REAL = "https://calendar.app.google/49vn5NJ3VTf2sMxq9"
 
+# Estilização Profissional
 st.markdown("""
     <style>
     .main { background-color: #000000; }
@@ -18,88 +20,88 @@ st.markdown("""
         background-color: #D4AF37 !important;
         color: black !important;
         font-weight: bold !important;
-        height: 45px;
+        height: 50px;
         border-radius: 8px;
-        margin-bottom: 10px;
+        border: none;
     }
-    .card { background-color: #111111; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; }
-    .date-text { color: #D4AF37; font-weight: bold; }
+    .card { 
+        background-color: #111111; 
+        padding: 20px; 
+        border-radius: 12px; 
+        border: 1px solid #D4AF37; 
+        margin-bottom: 15px;
+    }
+    .instrucao { color: #aaaaaa; font-size: 0.9em; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. ALUNOS FIXOS
-ALUNOS_FIXOS = {
-    "tathyanne": "11:30", "taina": "11:30", "vanderleia lucena": "15:00",
-    "cleiia caroline": "18:00", "guilherme": "20:30", "thaina sena": "20:30"
-}
+# 2. GERENCIAMENTO DE ESTADO
+if 'step' not in st.session_state: st.session_state.step = 1
+if 'nome' not in st.session_state: st.session_state.nome = ""
+if 'datas_selecionadas' not in st.session_state: st.session_state.datas_selecionadas = []
 
-if 'step' not in st.session_state:
-    st.session_state.step = 1
+# --- NAVEGAÇÃO ---
 
-# Função para formatar o link de injeção na sua agenda
-def gerar_link_google(nome, modalidade, data_obj, hora_str):
-    try:
-        h, m = map(int, hora_str.split(':'))
-        data_inicio = datetime.combine(data_obj, datetime.min.time()).replace(hour=h, minute=m)
-        data_fim = data_inicio + timedelta(hours=1)
-        fmt = "%Y%m%dT%H%M%SZ"
-        titulo = urllib.parse.quote(f"{modalidade.upper()}: {nome.upper()}")
-        # O parâmetro 'add' envia o invite direto para você
-        return f"https://www.google.com/calendar/render?action=TEMPLATE&text={titulo}&dates={data_inicio.strftime(fmt)}/{data_fim.strftime(fmt)}&add={MEU_EMAIL_AGENDA}&sf=true&output=xml"
-    except: return "#"
-
-# --- FLUXO ---
-
+# TELA 1: IDENTIFICAÇÃO
 if st.session_state.step == 1:
-    st.title("Identificação")
-    nome = st.text_input("Nome do Aluno:", placeholder="Digite seu nome completo...")
-    if st.button("Próximo >"):
+    st.title("Team Muniz")
+    st.subheader("Consultoria & Treinamento")
+    
+    nome = st.text_input("Informe seu nome completo:", value=st.session_state.nome)
+    
+    if st.button("VERIFICAR DISPONIBILIDADE"):
         if nome:
             st.session_state.nome = nome.strip()
             st.session_state.step = 2
             st.rerun()
+        else:
+            st.error("Por favor, digite seu nome para continuar.")
 
+# TELA 2: SELEÇÃO DE DATAS
 elif st.session_state.step == 2:
-    st.title("Datas e Horários")
-    modalidade = st.selectbox("Modalidade:", ["Treino Presencial", "Consultoria On-line", "Avaliação"])
-    
-    # Busca horário fixo
-    nome_min = st.session_state.nome.lower()
-    h_sugerido = next((h for n, h in ALUNOS_FIXOS.items() if n in nome_min), "08:00")
-    
-    st.write("Selecione as 3 datas desejadas (Padrão: DD/MM/AAAA):")
-    d1 = st.date_input("Aula 01", format="DD/MM/YYYY")
-    d2 = st.date_input("Aula 02", format="DD/MM/YYYY")
-    d3 = st.date_input("Aula 03", format="DD/MM/YYYY")
-    
-    horario = st.text_input("Horário (Fração):", value=h_sugerido)
-    
-    if st.button("Gerar Invites >"):
-        st.session_state.modalidade = modalidade
-        st.session_state.datas = [d1, d2, d3]
-        st.session_state.horario = horario
+    st.title("Agendamento Estratégico")
+    st.write(f"Olá, **{st.session_state.nome}**. Selecione as 3 datas pretendidas:")
+
+    with st.container():
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        d1 = st.date_input("Data da Aula 01", format="DD/MM/YYYY")
+        d2 = st.date_input("Data da Aula 02", format="DD/MM/YYYY")
+        d3 = st.date_input("Data da Aula 03", format="DD/MM/YYYY")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.info("No próximo passo, você escolherá os horários exatos que estão LIVRES na minha agenda oficial.")
+
+    if st.button("CONFIRMAR DATAS E VER HORÁRIOS"):
+        st.session_state.datas_selecionadas = [d1, d2, d3]
         st.session_state.step = 3
         st.rerun()
 
+# TELA 3: VALIDAÇÃO NA AGENDA REAL
 elif st.session_state.step == 3:
-    st.title("Injetar na Minha Agenda")
-    st.write(f"Aluno: **{st.session_state.nome}** | Horário: **{st.session_state.horario}**")
+    st.title("Horários Disponíveis")
     
-    st.warning("Clique nos 3 botões abaixo para confirmar cada aula na minha agenda:")
+    st.markdown(f"""
+    <div class="card">
+        <p><b>Passo Final Obrigatório:</b></p>
+        <p class="instrucao">Para garantir que não haja conflitos, clique no botão abaixo. Escolha os horários disponíveis para as datas selecionadas:
+        <br>• {st.session_state.datas_selecionadas[0].strftime('%d/%m/%Y')}
+        <br>• {st.session_state.datas_selecionadas[1].strftime('%d/%m/%Y')}
+        <br>• {st.session_state.datas_selecionadas[2].strftime('%d/%m/%Y')}
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    for i, data in enumerate(st.session_state.datas, 1):
-        data_br = data.strftime('%d/%m/%Y')
-        link = gerar_link_google(st.session_state.nome, st.session_state.modalidade, data, st.session_state.horario)
-        
-        with st.container():
-            st.markdown(f'<div class="card">AULA {i}: <span class="date-text">{data_br}</span></div>', unsafe_allow_html=True)
-            st.link_button(f"📅 ENVIAR INVITE AULA {i} ({data_br})", link)
+    # Botão que leva para o seu link específico do Google
+    st.link_button("📅 ESCOLHER HORÁRIOS LIVRES AGORA", LINK_AGENDA_REAL)
 
     st.write("---")
-    # Resumo para o WhatsApp
-    txt_zap = f"Fábio, enviei os 3 invites de {st.session_state.modalidade} para sua agenda!\nDatas: " + ", ".join([d.strftime('%d/%m/%Y') for d in st.session_state.datas])
-    st.link_button("📱 AVISAR NO WHATSAPP", f"https://wa.me/{MEU_WHATSAPP}?text={urllib.parse.quote(txt_zap)}")
+    
+    # Mensagem de WhatsApp para avisar você
+    datas_txt = ", ".join([d.strftime('%d/%m/%Y') for d in st.session_state.datas_selecionadas])
+    msg_zap = f"Fábio, sou o {st.session_state.nome}. Já escolhi meus horários na sua agenda para as datas: {datas_txt}."
+    
+    st.link_button("📱 JÁ AGENDEI! AVISAR NO WHATSAPP", f"https://wa.me/{MEU_WHATSAPP}?text={urllib.parse.quote(msg_zap)}")
 
-    if st.button("Novo Agendamento"):
+    if st.button("RECOMEÇAR"):
         st.session_state.step = 1
         st.rerun()
