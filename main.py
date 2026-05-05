@@ -7,6 +7,12 @@ st.set_page_config(page_title="Team Muniz - Agendamento", layout="centered", pag
 MEU_WHATSAPP = "5511987913509"
 LINK_AGENDA_REAL = "https://calendar.app.google/49vn5NJ3VTf2sMxq9"
 
+# 2. BANCO DE DADOS DE ALUNOS FIXOS (RECONHECIMENTO)
+ALUNOS_FIXOS = [
+    "tathyanne", "taina", "vanderleia lucena", 
+    "cleiia caroline", "guilherme", "thaina sena"
+]
+
 st.markdown("""
     <style>
     .main { background-color: #000000; }
@@ -21,7 +27,6 @@ st.markdown("""
         border-radius: 8px;
     }
     .card { background-color: #111111; padding: 20px; border-radius: 12px; border: 1px solid #D4AF37; margin-bottom: 15px; }
-    
     .caixa-nome {
         background-color: #D4AF37;
         color: black;
@@ -40,93 +45,91 @@ st.markdown("""
         font-weight: bold;
         text-align: center;
         text-transform: uppercase;
-        margin-bottom: 10px;
         animation: blinker 1.5s linear infinite;
     }
-    @keyframes blinker {
-        50% { opacity: 0; }
-    }
+    @keyframes blinker { 50% { opacity: 0; } }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. INICIALIZAÇÃO DE ESTADO
+# 3. INICIALIZAÇÃO DE ESTADO
 if 'step' not in st.session_state: st.session_state.step = 1
 if 'nome' not in st.session_state: st.session_state.nome = ""
-if 'modalidade' not in st.session_state: st.session_state.modalidade = ""
 
 # --- FLUXO DE TELAS ---
 
-# ETAPA 1: NOME
+# ETAPA 1: RECONHECIMENTO DE ALUNO
 if st.session_state.step == 1:
     st.title("Team Muniz")
-    st.subheader("Consultoria & Treinamento")
+    st.subheader("Área de Agendamento")
+    
     nome_input = st.text_input("Informe seu nome completo:", value=st.session_state.nome)
-    if st.button("PRÓXIMO >"):
+    
+    if st.button("VALIDAR ACESSO >"):
         if nome_input:
+            nome_valido = nome_input.strip().lower()
+            # Validação: verifica se o nome digitado contém algum dos nomes da lista de fixos
+            if any(fixo in nome_valido for fixo in ALUNOS_FIXOS):
+                st.success(f"Acesso validado: Bem-vindo de volta, Aluno(a) Fixo!")
+            else:
+                st.info("Acesso validado como novo aluno/visitante.")
+            
             st.session_state.nome = nome_input.strip()
             st.session_state.step = 2
             st.rerun()
-        else: st.error("O nome é obrigatório.")
+        else:
+            st.error("Por favor, digite seu nome.")
 
-# ETAPA 2: MODALIDADE
+# ETAPA 2: TERMOS E REGRAS (TOLERÂNCIA 10 MIN)
 elif st.session_state.step == 2:
-    st.title("O que vamos treinar?")
-    opcoes = ["Treino Presencial", "Consultoria On-line", "Avaliação Bioimpedância"]
-    idx = opcoes.index(st.session_state.modalidade) if st.session_state.modalidade in opcoes else 0
-    st.session_state.modalidade = st.selectbox("Selecione a modalidade:", opcoes, index=idx)
+    st.title("Termos do Time")
+    st.markdown(f"""
+    <div class="card">
+    <b>Regras Oficiais - Coach Muniz:</b><br><br>
+    • <b>Tolerância de atraso: 10 minutos.</b><br>
+    • Cancelamento: Mínimo de 24h de antecedência.<br>
+    • O agendamento só é oficial após conclusão na agenda do Google.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    aceito = st.checkbox("Eu li e concordo com os termos")
     
     col1, col2 = st.columns(2)
     with col1:
         if st.button("< VOLTAR"): st.session_state.step = 1; st.rerun()
     with col2:
-        if st.button("PRÓXIMO >"):
-            st.session_state.step = 3
-            st.rerun()
-
-# ETAPA 3: TERMOS
-elif st.session_state.step == 3:
-    st.title("Termos do Time")
-    st.markdown('<div class="card"><b>Regras do Time:</b><br>- Tolerância: 20 min.<br>- Cancelamento: 24h.<br>- O horário escolhido na próxima tela é o que vale.</div>', unsafe_allow_html=True)
-    
-    aceito = st.checkbox("Eu concordo com as regras")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("< VOLTAR"): st.session_state.step = 2; st.rerun()
-    with col2:
         if st.button("FINALIZAR >"):
             if aceito:
-                st.session_state.step = 4
+                st.session_state.step = 3
                 st.rerun()
             else: st.warning("Aceite os termos para continuar.")
 
-# ETAPA 4: REDIRECIONAMENTO E WHATSAPP
-elif st.session_state.step == 4:
+# ETAPA 3: REDIRECIONAMENTO FINAL
+elif st.session_state.step == 3:
     st.balloons()
     st.title("Tudo Pronto!")
     
-    st.markdown('<div class="aviso-urgente">⚠️ PREENCHA SEU NOME NA PRÓXIMA TELA!</div>', unsafe_allow_html=True)
+    st.markdown('<div class="aviso-urgente">⚠️ NÃO ESQUEÇA DE PREENCHER SEU NOME!</div>', unsafe_allow_html=True)
     
-    st.write("Copie seu nome para usar no agendamento:")
+    st.write("Identificação para a agenda:")
     st.markdown(f'<div class="caixa-nome">{st.session_state.nome}</div>', unsafe_allow_html=True)
     
     st.markdown(f"""
     <div class="card">
-    <b>Instruções Finais:</b><br>
-    1. Clique no botão abaixo para abrir minha agenda.<br>
-    2. <b>Selecione o(s) dia(s) e horário(s)</b> que deseja.<br>
-    3. Digite seu nome e e-mail para confirmar.<br>
-    4. Me avise no WhatsApp ao terminar.
+    <b>Instruções:</b><br>
+    1. Clique no botão dourado abaixo para abrir a agenda oficial.<br>
+    2. Escolha o horário disponível.<br>
+    3. Digite seu nome e e-mail no formulário do Google.<br>
+    4. Confirme seu agendamento.
     </div>
     """, unsafe_allow_html=True)
 
-    st.link_button("📅 ABRIR AGENDA E ESCOLHER HORÁRIOS", LINK_AGENDA_REAL)
+    st.link_button("📅 ABRIR AGENDA E ESCOLHER HORÁRIO", LINK_AGENDA_REAL)
 
     st.write("---")
-    msg_zap = f"Olá Fábio, aqui é o {st.session_state.nome}. Já acessei sua grade para agendar {st.session_state.modalidade}. Vou escolher os melhores horários agora!"
+    msg_zap = f"Olá Fábio, aqui é o {st.session_state.nome}. Já validei meus dados e estou escolhendo o melhor horário na sua agenda agora!"
     st.link_button("📱 AVISAR NO WHATSAPP", f"https://wa.me/{MEU_WHATSAPP}?text={urllib.parse.quote(msg_zap)}")
 
-    if st.button("RECOMEÇAR"):
+    if st.button("NOVO AGENDAMENTO"):
         st.session_state.step = 1
         st.session_state.nome = ""
         st.rerun()
