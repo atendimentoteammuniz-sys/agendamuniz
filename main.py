@@ -1,8 +1,7 @@
 import streamlit as st
 import urllib.parse
-from datetime import datetime
 
-# 1. IDENTIDADE VISUAL TEAM MUNIZ
+# 1. CONFIGURAÇÃO E IDENTIDADE VISUAL TEAM MUNIZ
 st.set_page_config(page_title="Team Muniz - Agendamento", layout="centered", page_icon="📅")
 
 MEU_WHATSAPP = "5511987913509"
@@ -22,20 +21,45 @@ st.markdown("""
         border-radius: 8px;
     }
     .card { background-color: #111111; padding: 20px; border-radius: 12px; border: 1px solid #D4AF37; margin-bottom: 15px; }
+    
+    .caixa-nome {
+        background-color: #D4AF37;
+        color: black;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        font-size: 28px;
+        font-weight: 900;
+        margin: 20px 0;
+        border: 4px solid white;
+        text-transform: uppercase;
+    }
+    .aviso-urgente {
+        color: #FF4B4B;
+        font-size: 20px;
+        font-weight: bold;
+        text-align: center;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+        animation: blinker 1.5s linear infinite;
+    }
+    @keyframes blinker {
+        50% { opacity: 0; }
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. INICIALIZAÇÃO SEGURA DO ESTADO
+# 2. INICIALIZAÇÃO DE ESTADO
 if 'step' not in st.session_state: st.session_state.step = 1
 if 'nome' not in st.session_state: st.session_state.nome = ""
 if 'modalidade' not in st.session_state: st.session_state.modalidade = ""
-if 'datas_selecionadas' not in st.session_state: st.session_state.datas_selecionadas = []
 
 # --- FLUXO DE TELAS ---
 
 # ETAPA 1: NOME
 if st.session_state.step == 1:
     st.title("Team Muniz")
+    st.subheader("Consultoria & Treinamento")
     nome_input = st.text_input("Informe seu nome completo:", value=st.session_state.nome)
     if st.button("PRÓXIMO >"):
         if nome_input:
@@ -44,41 +68,27 @@ if st.session_state.step == 1:
             st.rerun()
         else: st.error("O nome é obrigatório.")
 
-# ETAPA 2: MODALIDADE E DATAS
+# ETAPA 2: MODALIDADE
 elif st.session_state.step == 2:
-    st.title("Detalhes do Treino")
-    st.session_state.modalidade = st.selectbox("Escolha a modalidade:", 
-        ["Treino Presencial", "Consultoria On-line", "Avaliação Bioimpedância"],
-        index=0 if not st.session_state.modalidade else ["Treino Presencial", "Consultoria On-line", "Avaliação Bioimpedância"].index(st.session_state.modalidade)
-    )
-    
-    st.write("Selecione as 3 datas pretendidas (DD/MM/AAAA):")
-    d1 = st.date_input("Data da Aula 01", format="DD/MM/YYYY")
-    d2 = st.date_input("Data da Aula 02", format="DD/MM/YYYY")
-    d3 = st.date_input("Data da Aula 03", format="DD/MM/YYYY")
+    st.title("O que vamos treinar?")
+    opcoes = ["Treino Presencial", "Consultoria On-line", "Avaliação Bioimpedância"]
+    idx = opcoes.index(st.session_state.modalidade) if st.session_state.modalidade in opcoes else 0
+    st.session_state.modalidade = st.selectbox("Selecione a modalidade:", opcoes, index=idx)
     
     col1, col2 = st.columns(2)
     with col1:
         if st.button("< VOLTAR"): st.session_state.step = 1; st.rerun()
     with col2:
         if st.button("PRÓXIMO >"):
-            st.session_state.datas_selecionadas = [d1, d2, d3]
             st.session_state.step = 3
             st.rerun()
 
-# ETAPA 3: TERMOS E CONDIÇÕES
+# ETAPA 3: TERMOS
 elif st.session_state.step == 3:
     st.title("Termos do Time")
-    st.markdown("""
-    <div class="card">
-    <b>Regras Team Muniz:</b><br>
-    - Tolerância de atraso: 20 min.<br>
-    - Cancelamento: Mínimo de 24h de antecedência.<br>
-    - O agendamento só é oficial após a confirmação na agenda do Coach.
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="card"><b>Regras do Time:</b><br>- Tolerância: 20 min.<br>- Cancelamento: 24h.<br>- O horário escolhido na próxima tela é o que vale.</div>', unsafe_allow_html=True)
     
-    aceito = st.checkbox("Eu concordo com os termos e regras")
+    aceito = st.checkbox("Eu concordo com as regras")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -90,31 +100,30 @@ elif st.session_state.step == 3:
                 st.rerun()
             else: st.warning("Aceite os termos para continuar.")
 
-# ETAPA 4: AGENDA E WHATSAPP
+# ETAPA 4: REDIRECIONAMENTO E WHATSAPP
 elif st.session_state.step == 4:
     st.balloons()
-    st.title("Concluir Agendamento")
+    st.title("Tudo Pronto!")
     
-    # Verificação de segurança para o nome não vir vazio ou errado
-    nome_final = st.session_state.nome
-    mod_final = st.session_state.modalidade
+    st.markdown('<div class="aviso-urgente">⚠️ PREENCHA SEU NOME NA PRÓXIMA TELA!</div>', unsafe_allow_html=True)
+    
+    st.write("Copie seu nome para usar no agendamento:")
+    st.markdown(f'<div class="caixa-nome">{st.session_state.nome}</div>', unsafe_allow_html=True)
     
     st.markdown(f"""
     <div class="card">
-    <b>Aluno:</b> {nome_final}<br>
-    <b>Modalidade:</b> {mod_final}<br>
-    <b>Próximo passo:</b> Clique no botão abaixo para escolher seus horários livres.
+    <b>Instruções Finais:</b><br>
+    1. Clique no botão abaixo para abrir minha agenda.<br>
+    2. <b>Selecione o(s) dia(s) e horário(s)</b> que deseja.<br>
+    3. Digite seu nome e e-mail para confirmar.<br>
+    4. Me avise no WhatsApp ao terminar.
     </div>
     """, unsafe_allow_html=True)
 
-    st.link_button("📅 ABRIR AGENDA DO COACH", LINK_AGENDA_REAL)
+    st.link_button("📅 ABRIR AGENDA E ESCOLHER HORÁRIOS", LINK_AGENDA_REAL)
 
     st.write("---")
-    
-    # Montagem da mensagem do WhatsApp garantindo o nome correto
-    datas_txt = ", ".join([d.strftime('%d/%m/%Y') for d in st.session_state.datas_selecionadas])
-    msg_zap = f"Olá Fábio, aqui é o {nome_final}. Acabei de solicitar agendamento de {mod_final} para as datas: {datas_txt}."
-    
+    msg_zap = f"Olá Fábio, aqui é o {st.session_state.nome}. Já acessei sua grade para agendar {st.session_state.modalidade}. Vou escolher os melhores horários agora!"
     st.link_button("📱 AVISAR NO WHATSAPP", f"https://wa.me/{MEU_WHATSAPP}?text={urllib.parse.quote(msg_zap)}")
 
     if st.button("RECOMEÇAR"):
