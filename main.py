@@ -7,10 +7,10 @@ st.set_page_config(page_title="Team Muniz - Agendamento", layout="centered", pag
 MEU_WHATSAPP = "5511987913509"
 LINK_AGENDA_REAL = "https://calendar.app.google/49vn5NJ3VTf2sMxq9"
 
-# 2. BANCO DE DADOS DE ALUNOS FIXOS (RECONHECIMENTO)
+# BANCO DE DADOS DE ALUNOS FIXOS PARA SUGESTÃO/VALIDAÇÃO
 ALUNOS_FIXOS = [
-    "tathyanne", "taina", "vanderleia lucena", 
-    "cleiia caroline", "guilherme", "thaina sena"
+    "Tathyanne", "Taina", "Vanderleia Lucena", 
+    "Cleiia Caroline", "Guilherme", "Thaina Sena"
 ]
 
 st.markdown("""
@@ -39,55 +39,47 @@ st.markdown("""
         border: 4px solid white;
         text-transform: uppercase;
     }
-    .aviso-urgente {
-        color: #FF4B4B;
-        font-size: 20px;
-        font-weight: bold;
-        text-align: center;
-        text-transform: uppercase;
-        animation: blinker 1.5s linear infinite;
-    }
-    @keyframes blinker { 50% { opacity: 0; } }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. INICIALIZAÇÃO DE ESTADO
+# 2. INICIALIZAÇÃO DE ESTADO
 if 'step' not in st.session_state: st.session_state.step = 1
 if 'nome' not in st.session_state: st.session_state.nome = ""
+if 'modalidade' not in st.session_state: st.session_state.modalidade = ""
 
 # --- FLUXO DE TELAS ---
 
-# ETAPA 1: RECONHECIMENTO DE ALUNO
+# ETAPA 1: NOME E MODALIDADE
 if st.session_state.step == 1:
     st.title("Team Muniz")
-    st.subheader("Área de Agendamento")
+    st.subheader("Identificação")
     
-    nome_input = st.text_input("Informe seu nome completo:", value=st.session_state.nome)
+    # Sugestão para alunos fixos e entrada de texto
+    nome_input = st.selectbox("Se você é aluno fixo, selecione seu nome:", [""] + ALUNOS_FIXOS)
+    if not nome_input:
+        nome_input = st.text_input("Ou digite seu nome completo:", value=st.session_state.nome)
     
-    if st.button("VALIDAR ACESSO >"):
+    st.write("---")
+    opcoes_mod = ["Treino Presencial", "Consultoria On-line", "Avaliação Bioimpedância"]
+    st.session_state.modalidade = st.selectbox("Selecione a modalidade:", opcoes_mod)
+    
+    if st.button("PRÓXIMO >"):
         if nome_input:
-            nome_valido = nome_input.strip().lower()
-            # Validação: verifica se o nome digitado contém algum dos nomes da lista de fixos
-            if any(fixo in nome_valido for fixo in ALUNOS_FIXOS):
-                st.success(f"Acesso validado: Bem-vindo de volta, Aluno(a) Fixo!")
-            else:
-                st.info("Acesso validado como novo aluno/visitante.")
-            
             st.session_state.nome = nome_input.strip()
             st.session_state.step = 2
             st.rerun()
         else:
-            st.error("Por favor, digite seu nome.")
+            st.error("Por favor, identifique-se para continuar.")
 
-# ETAPA 2: TERMOS E REGRAS (TOLERÂNCIA 10 MIN)
+# ETAPA 2: TERMOS COM ACEITE
 elif st.session_state.step == 2:
-    st.title("Termos do Time")
+    st.title("Termos e Regras")
     st.markdown(f"""
     <div class="card">
-    <b>Regras Oficiais - Coach Muniz:</b><br><br>
+    <b>Regras Oficiais Team Muniz:</b><br><br>
     • <b>Tolerância de atraso: 10 minutos.</b><br>
     • Cancelamento: Mínimo de 24h de antecedência.<br>
-    • O agendamento só é oficial após conclusão na agenda do Google.
+    • O agendamento só é oficial após a conclusão na agenda do Google.
     </div>
     """, unsafe_allow_html=True)
     
@@ -101,32 +93,29 @@ elif st.session_state.step == 2:
             if aceito:
                 st.session_state.step = 3
                 st.rerun()
-            else: st.warning("Aceite os termos para continuar.")
+            else: st.warning("Aceite os termos para liberar a agenda.")
 
-# ETAPA 3: REDIRECIONAMENTO FINAL
+# ETAPA 3: REDIRECIONAMENTO PARA AGENDA
 elif st.session_state.step == 3:
     st.balloons()
-    st.title("Tudo Pronto!")
+    st.title("Acesse a Agenda")
     
-    st.markdown('<div class="aviso-urgente">⚠️ NÃO ESQUEÇA DE PREENCHER SEU NOME!</div>', unsafe_allow_html=True)
-    
-    st.write("Identificação para a agenda:")
+    st.write("Ao abrir o link, preencha seu nome exatamente assim:")
     st.markdown(f'<div class="caixa-nome">{st.session_state.nome}</div>', unsafe_allow_html=True)
     
     st.markdown(f"""
     <div class="card">
-    <b>Instruções:</b><br>
-    1. Clique no botão dourado abaixo para abrir a agenda oficial.<br>
-    2. Escolha o horário disponível.<br>
-    3. Digite seu nome e e-mail no formulário do Google.<br>
-    4. Confirme seu agendamento.
+    <b>Próximos Passos:</b><br>
+    1. Clique no botão abaixo para abrir a grade oficial.<br>
+    2. Escolha o dia e horário disponível.<br>
+    3. Confirme seus dados no formulário do Google.
     </div>
     """, unsafe_allow_html=True)
 
     st.link_button("📅 ABRIR AGENDA E ESCOLHER HORÁRIO", LINK_AGENDA_REAL)
 
     st.write("---")
-    msg_zap = f"Olá Fábio, aqui é o {st.session_state.nome}. Já validei meus dados e estou escolhendo o melhor horário na sua agenda agora!"
+    msg_zap = f"Olá Fábio, aqui é o {st.session_state.nome}. Já validei meus dados e estou agendando {st.session_state.modalidade} agora!"
     st.link_button("📱 AVISAR NO WHATSAPP", f"https://wa.me/{MEU_WHATSAPP}?text={urllib.parse.quote(msg_zap)}")
 
     if st.button("NOVO AGENDAMENTO"):
