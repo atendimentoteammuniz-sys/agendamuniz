@@ -1,12 +1,12 @@
 import streamlit as st
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # 1. CONFIGURAÇÃO E IDENTIDADE VISUAL TEAM MUNIZ
 st.set_page_config(page_title="Team Muniz - Agendamento", layout="centered", page_icon="📅")
 
+MEU_EMAIL_AGENDA = "fabiomuniz.personal@gmail.com" # Ajuste para o e-mail da sua agenda Google
 MEU_WHATSAPP = "5511987913509"
-LINK_MINHA_AGENDA_GOOGLE = "https://calendar.app.google/YGhyV7GK38tuBBtv8"
 
 st.markdown("""
     <style>
@@ -38,23 +38,23 @@ if 'step' not in st.session_state:
 def proximo_passo(): st.session_state.step += 1
 def voltar_passo(): st.session_state.step -= 1
 
-# ETAPA 1: NOME
+# ETAPA 1: IDENTIFICAÇÃO
 if st.session_state.step == 1:
     st.markdown('<p class="step-text">Etapa 1</p>', unsafe_allow_html=True)
-    st.title("Qual é seu nome?")
-    nome = st.text_input("Nome Completo *", placeholder="Digite seu nome para verificarmos seu cadastro...")
+    st.title("Quem está agendando?")
+    nome = st.text_input("Nome Completo *", placeholder="Digite seu nome...")
     if st.button("Próximo >"):
         if nome:
             st.session_state.nome = nome.strip()
             proximo_passo()
             st.rerun()
-        else: st.error("Digite seu nome para continuar.")
+        else: st.error("O nome é obrigatório.")
 
 # ETAPA 2: MODALIDADE
 elif st.session_state.step == 2:
     st.markdown('<p class="step-text">Etapa 2</p>', unsafe_allow_html=True)
-    st.title("O que vamos agendar?")
-    modalidade = st.selectbox("Selecione a modalidade *", [
+    st.title("Tipo de Atendimento")
+    modalidade = st.selectbox("Selecione *", [
         "Treino Presencial", "Consultoria On-line", 
         "Avaliação Bioimpedância", "Aula Experimental"
     ])
@@ -67,66 +67,86 @@ elif st.session_state.step == 2:
             proximo_passo()
             st.rerun()
 
-# ETAPA 3: RECONHECIMENTO E TERMOS
+# ETAPA 3: DATA E FRAÇÃO DE HORÁRIO
 elif st.session_state.step == 3:
     st.markdown('<p class="step-text">Etapa 3</p>', unsafe_allow_html=True)
-    st.title("Termos e Regras")
+    st.title("Data e Horário")
     
+    # Lógica de Horário Fixo
     nome_min = st.session_state.nome.lower()
-    horario_padrao = next((h for n, h in ALUNOS_FIXOS.items() if n in nome_min), None)
+    horario_sugerido = next((h for n, h in ALUNOS_FIXOS.items() if n in nome_min), "08:00")
     
-    if horario_padrao:
-        st.success(f"Aluno Fixo detectado! Seu horário reservado é às **{horario_padrao}**.")
-        st.write("Você será direcionado para minha agenda oficial para confirmar o dia desejado.")
-    else:
-        st.info("Você será direcionado para minha agenda para escolher um horário disponível.")
-
-    st.markdown("""
-    <div class="card">
-    <b>Regras do Time:</b><br>
-    - Tolerância de atraso: 20 minutos.<br>
-    - Cancelamentos: Mínimo de 24h de antecedência.<br>
-    - O agendamento cai direto na agenda do Coach.
-    </div>
-    """, unsafe_allow_html=True)
+    st.write("Escolha os dias das suas aulas (até 3 dias):")
+    d1 = st.date_input("Aula 1", min_value=datetime.now().date(), key="d1")
+    d2 = st.date_input("Aula 2", min_value=datetime.now().date(), key="d2")
+    d3 = st.date_input("Aula 3", min_value=datetime.now().date(), key="d3")
     
-    aceito = st.checkbox("Eu concordo com os termos e desejo agendar na agenda do Coach")
+    horario = st.text_input("Horário das Aulas (Fixo ou Fração)", value=horario_sugerido)
     
     col1, col2 = st.columns(2)
     with col1:
         if st.button("< Voltar"): voltar_passo(); st.rerun()
     with col2:
-        if st.button("Ir para Agenda >"):
-            if aceito:
-                proximo_passo()
-                st.rerun()
-            else:
-                st.warning("Aceite os termos para acessar a agenda.")
+        if st.button("Próximo >"):
+            st.session_state.datas = [d1, d2, d3]
+            st.session_state.horario = horario
+            proximo_passo()
+            st.rerun()
 
-# ETAPA 4: FINALIZAÇÃO E DIRECIONAMENTO
+# ETAPA 4: TERMOS E ACEITE
 elif st.session_state.step == 4:
-    st.balloons()
-    st.title("Tudo Pronto!")
-    st.write(f"**{st.session_state.nome}**, agora é só escolher o dia e confirmar seu **{st.session_state.modalidade}**.")
-    
+    st.markdown('<p class="step-text">Etapa 4</p>', unsafe_allow_html=True)
+    st.title("Termos e Confirmação")
     st.markdown("""
-    <div class="card" style="border-color: #D4AF37;">
-    <b>Instruções Finais:</b><br>
-    1. Clique no botão abaixo para abrir minha agenda oficial.<br>
-    2. Escolha o dia e o horário (fixo ou disponível).<br>
-    3. Após confirmar no Google, me envie o aviso pelo WhatsApp.
+    <div class="card">
+    <b>Termos e Condições</b><br>
+    - Tolerância de 20 min.<br>
+    - Cancelamento com 24h.<br>
+    - O agendamento será enviado como convite para a agenda do Coach Muniz.
     </div>
     """, unsafe_allow_html=True)
+    aceito = st.checkbox("Eu concordo e quero enviar o convite para a agenda do Coach")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("< Voltar"): voltar_passo(); st.rerun()
+    with col2:
+        if st.button("Finalizar Agendamento"):
+            if aceito: proximo_passo(); st.rerun()
+            else: st.warning("Aceite os termos.")
 
-    # BOTÃO QUE VAI PARA A SUA AGENDA (Onde o aluno marca e cai pra você)
-    st.link_button("📅 ABRIR MINHA AGENDA (GOOGLE CALENDAR)", LINK_MINHA_AGENDA_GOOGLE)
+# ETAPA 5: ENVIO DO INVITE (AÇÃO PARA SUA AGENDA)
+elif st.session_state.step == 5:
+    st.balloons()
+    st.title("Enviar para Agenda")
+    st.write(f"Tudo pronto, **{st.session_state.nome}**! Agora clique no botão abaixo para gerar o convite oficial na agenda do Fábio.")
+    
+    # Criar o corpo do e-mail de invite
+    corpo_email = (f"Solicitação de Agendamento - Team Muniz\n\n"
+                   f"Aluno: {st.session_state.nome}\n"
+                   f"Modalidade: {st.session_state.modalidade}\n"
+                   f"Horário: {st.session_state.horario}\n"
+                   f"Datas solicitadas:\n")
+    
+    for d in st.session_state.datas:
+        corpo_email += f"- {d.strftime('%d/%m/%Y')}\n"
+        
+    assunto = f"INVITE: {st.session_state.modalidade.upper()} - {st.session_state.nome.upper()}"
+    mailto_link = f"mailto:{MEU_EMAIL_AGENDA}?subject={urllib.parse.quote(assunto)}&body={urllib.parse.quote(corpo_email)}"
+    
+    st.markdown(f"""
+    <div class="card" style="border-color: #D4AF37;">
+    <b>Importante:</b> Ao clicar no botão, seu aplicativo de e-mail abrirá. Basta clicar em 'Enviar' para que o Fábio receba e confirme na agenda dele.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.link_button("📧 ENVIAR INVITE PARA O COACH", mailto_link)
     
     st.write("---")
-    
-    # WHATSAPP DE AVISO
-    resumo_wpp = f"Olá Fábio, aqui é {st.session_state.nome}. Acabei de acessar sua agenda para marcar um(a) {st.session_state.modalidade}!"
-    st.link_button("📱 AVISAR NO WHATSAPP", f"https://wa.me/{MEU_WHATSAPP}?text={urllib.parse.quote(resumo_wpp)}")
+    # Backup via WhatsApp
+    resumo_zap = f"Fábio, acabei de enviar os invites por e-mail para as aulas de {st.session_state.modalidade}!"
+    st.link_button("📱 AVISAR NO WHATSAPP", f"https://wa.me/{MEU_WHATSAPP}?text={urllib.parse.quote(resumo_zap)}")
 
-    if st.button("Recomeçar"):
+    if st.button("Novo Agendamento"):
         st.session_state.step = 1
         st.rerun()
