@@ -2,11 +2,10 @@ import streamlit as st
 import urllib.parse
 from datetime import datetime, timedelta
 
-# 1. IDENTIDADE VISUAL TEAM MUNIZ
-st.set_page_config(page_title="Team Muniz - Agendamento Direto", layout="centered", page_icon="📅")
+# 1. IDENTIDADE VISUAL E CONFIGURAÇÃO TEAM MUNIZ
+st.set_page_config(page_title="Team Muniz - Agendamento", layout="centered", page_icon="📅")
 
-# E-mail da sua agenda onde o compromisso deve aparecer
-MEU_EMAIL_AGENDA = "fabiomuniz.personal@gmail.com" 
+MEU_EMAIL_AGENDA = "fabiomuniz.personal@gmail.com" # SEU E-MAIL DA AGENDA
 MEU_WHATSAPP = "5511987913509"
 
 st.markdown("""
@@ -19,10 +18,12 @@ st.markdown("""
         background-color: #D4AF37 !important;
         color: black !important;
         font-weight: bold !important;
-        height: 50px;
+        height: 45px;
         border-radius: 8px;
+        margin-bottom: 10px;
     }
-    .card { background-color: #111111; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 10px; }
+    .card { background-color: #111111; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 15px; }
+    .date-text { color: #D4AF37; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -35,71 +36,70 @@ ALUNOS_FIXOS = {
 if 'step' not in st.session_state:
     st.session_state.step = 1
 
-# Função para gerar o link que injeta o evento na sua agenda
-def criar_link_direto_agenda(nome, modalidade, data_dt, hora_str):
+# Função para formatar o link de injeção na sua agenda
+def gerar_link_google(nome, modalidade, data_obj, hora_str):
     try:
         h, m = map(int, hora_str.split(':'))
-        data_inicio = datetime.combine(data_dt, datetime.min.time()).replace(hour=h, minute=m)
+        data_inicio = datetime.combine(data_obj, datetime.min.time()).replace(hour=h, minute=m)
         data_fim = data_inicio + timedelta(hours=1)
-        
         fmt = "%Y%m%dT%H%M%SZ"
         titulo = urllib.parse.quote(f"{modalidade.upper()}: {nome.upper()}")
-        detalhes = urllib.parse.quote(f"Agendamento via App Team Muniz\nAluno: {nome}")
-        
-        # O segredo está no parâmetro 'add': ele convida seu e-mail direto
-        return f"https://www.google.com/calendar/render?action=TEMPLATE&text={titulo}&dates={data_inicio.strftime(fmt)}/{data_fim.strftime(fmt)}&details={detalhes}&add={MEU_EMAIL_AGENDA}&sf=true&output=xml"
-    except:
-        return "#"
+        # O parâmetro 'add' envia o invite direto para você
+        return f"https://www.google.com/calendar/render?action=TEMPLATE&text={titulo}&dates={data_inicio.strftime(fmt)}/{data_fim.strftime(fmt)}&add={MEU_EMAIL_AGENDA}&sf=true&output=xml"
+    except: return "#"
 
-# --- FLUXO DE TELAS ---
+# --- FLUXO ---
 
 if st.session_state.step == 1:
-    st.title("Sistema de Injeção de Agenda")
-    nome = st.text_input("Nome do Aluno:", placeholder="Ex: Fábio Muniz")
-    if st.button("Avançar"):
+    st.title("Identificação")
+    nome = st.text_input("Nome do Aluno:", placeholder="Digite seu nome completo...")
+    if st.button("Próximo >"):
         if nome:
             st.session_state.nome = nome.strip()
             st.session_state.step = 2
             st.rerun()
 
 elif st.session_state.step == 2:
-    st.title("Detalhes do Treino")
+    st.title("Datas e Horários")
     modalidade = st.selectbox("Modalidade:", ["Treino Presencial", "Consultoria On-line", "Avaliação"])
     
+    # Busca horário fixo
     nome_min = st.session_state.nome.lower()
-    horario_sugerido = next((h for n, h in ALUNOS_FIXOS.items() if n in nome_min), "08:00")
+    h_sugerido = next((h for n, h in ALUNOS_FIXOS.items() if n in nome_min), "08:00")
     
-    data = st.date_input("Data do Treino:", min_value=datetime.now().date())
-    horario = st.text_input("Horário (Fração):", value=horario_sugerido)
+    st.write("Selecione as 3 datas desejadas (Padrão: DD/MM/AAAA):")
+    d1 = st.date_input("Aula 01", format="DD/MM/YYYY")
+    d2 = st.date_input("Aula 02", format="DD/MM/YYYY")
+    d3 = st.date_input("Aula 03", format="DD/MM/YYYY")
     
-    if st.button("Confirmar e Gerar Compromisso"):
+    horario = st.text_input("Horário (Fração):", value=h_sugerido)
+    
+    if st.button("Gerar Invites >"):
         st.session_state.modalidade = modalidade
-        st.session_state.data_final = data
-        st.session_state.horario_final = horario
+        st.session_state.datas = [d1, d2, d3]
+        st.session_state.horario = horario
         st.session_state.step = 3
         st.rerun()
 
 elif st.session_state.step == 3:
-    st.title("Finalizar Agendamento")
-    st.write(f"Aluno: **{st.session_state.nome}**")
-    st.write(f"Horário: **{st.session_state.horario_final}**")
+    st.title("Injetar na Minha Agenda")
+    st.write(f"Aluno: **{st.session_state.nome}** | Horário: **{st.session_state.horario}**")
     
-    link_agenda = criar_link_direto_agenda(
-        st.session_state.nome, 
-        st.session_state.modalidade, 
-        st.session_state.data_final, 
-        st.session_state.horario_final
-    )
-    
-    st.markdown(f"""
-    <div class="card">
-    Para que o treino apareça na minha agenda agora, você deve clicar no botão abaixo e confirmar o salvamento.
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Este botão abre a agenda já com seu e-mail como convidado obrigatório
-    st.link_button("✅ INJETAR NA AGENDA DO COACH", link_agenda)
-    
+    st.warning("Clique nos 3 botões abaixo para confirmar cada aula na minha agenda:")
+
+    for i, data in enumerate(st.session_state.datas, 1):
+        data_br = data.strftime('%d/%m/%Y')
+        link = gerar_link_google(st.session_state.nome, st.session_state.modalidade, data, st.session_state.horario)
+        
+        with st.container():
+            st.markdown(f'<div class="card">AULA {i}: <span class="date-text">{data_br}</span></div>', unsafe_allow_html=True)
+            st.link_button(f"📅 ENVIAR INVITE AULA {i} ({data_br})", link)
+
     st.write("---")
-    resumo_wpp = f"Fábio, agendei meu treino de {st.session_state.modalidade} para o dia {st.session_state.data_final.strftime('%d/%m/%Y')} às {st.session_state.horario_final}. Já deve aparecer na sua agenda!"
-    st.link_button("📱 AVISAR NO WHATSAPP", f"https://wa.me/{MEU_WHATSAPP}?text={urllib.parse.quote(resumo_wpp)}")
+    # Resumo para o WhatsApp
+    txt_zap = f"Fábio, enviei os 3 invites de {st.session_state.modalidade} para sua agenda!\nDatas: " + ", ".join([d.strftime('%d/%m/%Y') for d in st.session_state.datas])
+    st.link_button("📱 AVISAR NO WHATSAPP", f"https://wa.me/{MEU_WHATSAPP}?text={urllib.parse.quote(txt_zap)}")
+
+    if st.button("Novo Agendamento"):
+        st.session_state.step = 1
+        st.rerun()
