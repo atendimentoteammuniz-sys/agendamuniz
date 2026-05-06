@@ -7,7 +7,10 @@ st.set_page_config(page_title="Team Muniz - Agendamento", layout="centered", pag
 MEU_WHATSAPP = "5511987913509"
 LINK_AGENDA_REAL = "https://calendar.app.google/49vn5NJ3VTf2sMxq9"
 
-# BANCO DE DATA DOS ALUNOS FIXOS ATUALIZADO
+# LINK DA SUA FOTO (Substitua pelo link direto da imagem hospedada)
+URL_MINHA_FOTO = "https://input-file-url-aqui.com/foto.jpg" 
+
+# BANCO DE DADOS DOS ALUNOS FIXOS
 ALUNOS_FIXOS = {
     "Tathyane Oyarce e Tainá Oyarce": "11:30",
     "Vanderleia Lucena": "15:00",
@@ -15,21 +18,34 @@ ALUNOS_FIXOS = {
     "Thainá Sena & Guilherme Jeronymo": "20:30"
 }
 
-st.markdown("""
+# CSS customizado para adicionar sua foto ao fundo
+st.markdown(f"""
     <style>
-    .main { background-color: #000000; }
-    h1, h2, h3 { color: #D4AF37 !important; font-weight: bold; }
-    .stMarkdown { color: white; }
-    .stButton>button {
+    .stApp {{
+        background: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), 
+                    url("{URL_MINHA_FOTO}");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }}
+    h1, h2, h3 {{ color: #D4AF37 !important; font-weight: bold; }}
+    .stMarkdown {{ color: white; }}
+    .stButton>button {{
         width: 100%;
         background-color: #D4AF37 !important;
         color: black !important;
         font-weight: bold !important;
         height: 50px;
         border-radius: 8px;
-    }
-    .card { background-color: #111111; padding: 20px; border-radius: 12px; border: 1px solid #D4AF37; margin-bottom: 15px; }
-    .caixa-nome {
+    }}
+    .card {{ 
+        background-color: rgba(17, 17, 17, 0.9); 
+        padding: 20px; 
+        border-radius: 12px; 
+        border: 1px solid #D4AF37; 
+        margin-bottom: 15px; 
+    }}
+    .caixa-nome {{
         background-color: #D4AF37;
         color: black;
         padding: 15px;
@@ -38,7 +54,7 @@ st.markdown("""
         font-size: 22px;
         font-weight: bold;
         margin: 15px 0;
-    }
+    }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -74,7 +90,7 @@ elif st.session_state.step == 2:
     <div class="card">
     Seu horário fixo registrado é: <br>
     <span style="font-size: 24px; color: #D4AF37;"><b>{st.session_state.horario}</b></span>
-    <br><br>Deseja confirmar este horário para seu agendamento?
+    <br><br>Deseja confirmar este horário?
     </div>
     """, unsafe_allow_html=True)
     
