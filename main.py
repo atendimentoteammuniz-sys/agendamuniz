@@ -16,28 +16,37 @@ ALUNOS_FIXOS = {
     "Thainá Sena & Guilherme Jeronymo": "20:30"
 }
 
+# INICIALIZAÇÃO SEGURA DE TODAS AS VARIÁVEIS (Evita o erro AttributeError)
+if 'step' not in st.session_state: st.session_state.step = 1
+if 'nome' not in st.session_state: st.session_state.nome = ""
+if 'horario' not in st.session_state: st.session_state.horario = ""
+if 'modalidade' not in st.session_state: st.session_state.modalidade = "Treino Presencial"
+if 'is_fixo' not in st.session_state: st.session_state.is_fixo = False
+
 # FUNÇÃO PARA CARREGAR IMAGEM LOCAL COMO FUNDO
 def get_base64_image(image_path):
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
+    try:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except:
+        return None
 
-try:
-    img_base64 = get_base64_image("5f31ca7e-881e-4d36-9ef3-215284a5f651 2.jpg")
-    bg_style = f"""
-    <style>
-    .stApp {{
-        background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), 
-                    url("data:image/jpg;base64,{img_base64}");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-    }}
-    </style>
-    """
-except:
-    bg_style = """<style>.stApp { background-color: #000000; }</style>"""
+img_base64 = get_base64_image("5f31ca7e-881e-4d36-9ef3-215284a5f651 2.jpg")
 
-st.markdown(bg_style, unsafe_allow_html=True)
+if img_base64:
+    st.markdown(f"""
+        <style>
+        .stApp {{
+            background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), 
+                        url("data:image/jpg;base64,{img_base64}");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }}
+        </style>
+        """, unsafe_allow_html=True)
+else:
+    st.markdown("<style>.stApp { background-color: #000000; }</style>", unsafe_allow_html=True)
 
 st.markdown("""
     <style>
@@ -65,15 +74,9 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. INICIALIZAÇÃO DE ESTADO
-if 'step' not in st.session_state: st.session_state.step = 1
-if 'nome' not in st.session_state: st.session_state.nome = ""
-if 'horario' not in st.session_state: st.session_state.horario = ""
-if 'is_fixo' not in st.session_state: st.session_state.is_fixo = False
-
 # --- FLUXO DE TELAS ---
 
-# ETAPA 1: IDENTIFICAÇÃO (FIXO OU NOVO)
+# ETAPA 1: IDENTIFICAÇÃO
 if st.session_state.step == 1:
     st.title("Team Muniz")
     st.subheader("Bem-vindo")
@@ -84,7 +87,6 @@ if st.session_state.step == 1:
         if opcao_nome != "Clique para selecionar":
             if opcao_nome == "Sou um Novo Aluno":
                 st.session_state.is_fixo = False
-                st.session_state.nome = "" # Será preenchido na próxima tela
                 st.session_state.step = 1.5
             else:
                 st.session_state.is_fixo = True
@@ -100,7 +102,7 @@ elif st.session_state.step == 1.5:
     if st.button("CONFIRMAR NOME >"):
         if nome_novo:
             st.session_state.nome = nome_novo.strip()
-            st.session_state.step = 2.5 # Pula direto para modalidade
+            st.session_state.step = 2.5
             st.rerun()
 
 # ETAPA 2: CONFIRMAÇÃO ALUNO FIXO
@@ -112,11 +114,12 @@ elif st.session_state.step == 2:
         st.rerun()
     if st.button("< VOLTAR"): st.session_state.step = 1; st.rerun()
 
-# ETAPA 2.5: MODALIDADE (PARA TODOS)
+# ETAPA 2.5: MODALIDADE
 elif st.session_state.step == 2.5:
     st.title("Modalidade")
-    st.session_state.modalidade = st.selectbox("O que vamos treinar?", ["Treino Presencial", "Consultoria On-line", "Avaliação Bioimpedância"])
+    modalidade_escolhida = st.selectbox("O que vamos treinar?", ["Treino Presencial", "Consultoria On-line", "Avaliação Bioimpedância"])
     if st.button("PRÓXIMO >"):
+        st.session_state.modalidade = modalidade_escolhida
         st.session_state.step = 3
         st.rerun()
 
@@ -143,6 +146,11 @@ elif st.session_state.step == 4:
     st.link_button("📅 ABRIR AGENDA DO COACH", LINK_AGENDA_REAL)
     
     st.write("---")
+    # Agora a modalidade está garantida no estado
     msg = f"Olá Fábio, sou {st.session_state.nome}. Agendei {st.session_state.modalidade} na sua grade!"
     st.link_button("📱 AVISAR NO WHATSAPP", f"https://wa.me/{MEU_WHATSAPP}?text={urllib.parse.quote(msg)}")
-    if st.button("RECOMEÇAR"): st.session_state.step = 1; st.rerun()
+    
+    if st.button("RECOMEÇAR"):
+        st.session_state.step = 1
+        st.session_state.nome = ""
+        st.rerun()
