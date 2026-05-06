@@ -1,14 +1,12 @@
 import streamlit as st
 import urllib.parse
+import base64
 
 # 1. CONFIGURAÇÃO E IDENTIDADE VISUAL TEAM MUNIZ
 st.set_page_config(page_title="Team Muniz - Agendamento", layout="centered", page_icon="📅")
 
 MEU_WHATSAPP = "5511987913509"
 LINK_AGENDA_REAL = "https://calendar.app.google/49vn5NJ3VTf2sMxq9"
-
-# LINK DA SUA FOTO (Substitua pelo link direto da imagem hospedada)
-URL_MINHA_FOTO = "https://input-file-url-aqui.com/foto.jpg" 
 
 # BANCO DE DADOS DOS ALUNOS FIXOS
 ALUNOS_FIXOS = {
@@ -18,43 +16,52 @@ ALUNOS_FIXOS = {
     "Thainá Sena & Guilherme Jeronymo": "20:30"
 }
 
-# CSS customizado para adicionar sua foto ao fundo
-st.markdown(f"""
+# FUNÇÃO PARA CARREGAR IMAGEM LOCAL COMO FUNDO
+def get_base64_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
+try:
+    img_base64 = get_base64_image("5f31ca7e-881e-4d36-9ef3-215284a5f651 2.jpg")
+    bg_style = f"""
     <style>
     .stApp {{
-        background: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), 
-                    url("{URL_MINHA_FOTO}");
+        background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), 
+                    url("data:image/jpg;base64,{img_base64}");
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
     }}
-    h1, h2, h3 {{ color: #D4AF37 !important; font-weight: bold; }}
-    .stMarkdown {{ color: white; }}
-    .stButton>button {{
+    </style>
+    """
+except:
+    bg_style = """<style>.stApp { background-color: #000000; }</style>"""
+
+st.markdown(bg_style, unsafe_allow_html=True)
+
+st.markdown("""
+    <style>
+    h1, h2, h3 { color: #D4AF37 !important; font-weight: bold; }
+    .stMarkdown { color: white; }
+    .stButton>button {
         width: 100%;
         background-color: #D4AF37 !important;
         color: black !important;
         font-weight: bold !important;
         height: 50px;
         border-radius: 8px;
-    }}
-    .card {{ 
+    }
+    .card { 
         background-color: rgba(17, 17, 17, 0.9); 
         padding: 20px; 
         border-radius: 12px; 
         border: 1px solid #D4AF37; 
         margin-bottom: 15px; 
-    }}
-    .caixa-nome {{
-        background-color: #D4AF37;
-        color: black;
-        padding: 15px;
-        border-radius: 8px;
-        text-align: center;
-        font-size: 22px;
-        font-weight: bold;
-        margin: 15px 0;
-    }}
+    }
+    .caixa-nome {
+        background-color: #D4AF37; color: black; padding: 15px;
+        border-radius: 8px; text-align: center; font-size: 22px; font-weight: bold; margin: 15px 0;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -62,92 +69,80 @@ st.markdown(f"""
 if 'step' not in st.session_state: st.session_state.step = 1
 if 'nome' not in st.session_state: st.session_state.nome = ""
 if 'horario' not in st.session_state: st.session_state.horario = ""
+if 'is_fixo' not in st.session_state: st.session_state.is_fixo = False
 
 # --- FLUXO DE TELAS ---
 
-# ETAPA 1: RECONHECIMENTO DO ALUNO
+# ETAPA 1: IDENTIFICAÇÃO (FIXO OU NOVO)
 if st.session_state.step == 1:
     st.title("Team Muniz")
-    st.subheader("Identificação")
+    st.subheader("Bem-vindo")
     
-    opcao_nome = st.selectbox("Selecione seu nome:", ["Clique para selecionar"] + list(ALUNOS_FIXOS.keys()) + ["Outro (Novo Aluno)"])
+    opcao_nome = st.selectbox("Identifique-se:", ["Clique para selecionar"] + list(ALUNOS_FIXOS.keys()) + ["Sou um Novo Aluno"])
     
     if st.button("PRÓXIMO >"):
         if opcao_nome != "Clique para selecionar":
-            st.session_state.nome = opcao_nome
-            st.session_state.horario = ALUNOS_FIXOS.get(opcao_nome, "Sob consulta")
-            st.session_state.step = 2
+            if opcao_nome == "Sou um Novo Aluno":
+                st.session_state.is_fixo = False
+                st.session_state.nome = "" # Será preenchido na próxima tela
+                st.session_state.step = 1.5
+            else:
+                st.session_state.is_fixo = True
+                st.session_state.nome = opcao_nome
+                st.session_state.horario = ALUNOS_FIXOS[opcao_nome]
+                st.session_state.step = 2
             st.rerun()
-        else:
-            st.warning("Selecione uma opção para continuar.")
 
-# ETAPA 2: CONFIRMAÇÃO DE HORÁRIO
+# ETAPA 1.5: CADASTRO NOVO ALUNO
+elif st.session_state.step == 1.5:
+    st.title("Novo Aluno")
+    nome_novo = st.text_input("Digite seu nome completo:")
+    if st.button("CONFIRMAR NOME >"):
+        if nome_novo:
+            st.session_state.nome = nome_novo.strip()
+            st.session_state.step = 2.5 # Pula direto para modalidade
+            st.rerun()
+
+# ETAPA 2: CONFIRMAÇÃO ALUNO FIXO
 elif st.session_state.step == 2:
-    st.title("Confirmação de Horário")
-    st.write(f"Olá, **{st.session_state.nome}**.")
-    
-    st.markdown(f"""
-    <div class="card">
-    Seu horário fixo registrado é: <br>
-    <span style="font-size: 24px; color: #D4AF37;"><b>{st.session_state.horario}</b></span>
-    <br><br>Deseja confirmar este horário?
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("< VOLTAR"): st.session_state.step = 1; st.rerun()
-    with col2:
-        if st.button("SIM, CONFIRMAR >"):
-            st.session_state.step = 3
-            st.rerun()
+    st.title("Confirmar Horário")
+    st.markdown(f'<div class="card">Olá <b>{st.session_state.nome}</b>, seu horário fixo é <b>{st.session_state.horario}</b>.</div>', unsafe_allow_html=True)
+    if st.button("SIM, CONFIRMAR >"):
+        st.session_state.step = 2.5
+        st.rerun()
+    if st.button("< VOLTAR"): st.session_state.step = 1; st.rerun()
 
-# ETAPA 3: TERMOS
+# ETAPA 2.5: MODALIDADE (PARA TODOS)
+elif st.session_state.step == 2.5:
+    st.title("Modalidade")
+    st.session_state.modalidade = st.selectbox("O que vamos treinar?", ["Treino Presencial", "Consultoria On-line", "Avaliação Bioimpedância"])
+    if st.button("PRÓXIMO >"):
+        st.session_state.step = 3
+        st.rerun()
+
+# ETAPA 3: TERMOS (TOLERÂNCIA 10 MIN)
 elif st.session_state.step == 3:
     st.title("Termos do Time")
     st.markdown("""
     <div class="card">
-    <b>Regras Team Muniz:</b><br><br>
+    <b>Regras Oficiais:</b><br><br>
     • <b>Tolerância de atraso: 10 minutos.</b><br>
-    • Cancelamento: Mínimo de 24h de antecedência.<br>
-    • O agendamento só é oficial após conclusão na agenda do Google.
+    • Cancelamento: Mínimo de 24h de antecedência.
     </div>
     """, unsafe_allow_html=True)
-    
-    aceito = st.checkbox("Concordo com os termos e regras")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("< VOLTAR"): st.session_state.step = 2; st.rerun()
-    with col2:
-        if st.button("FINALIZAR >"):
-            if aceito:
-                st.session_state.step = 4
-                st.rerun()
-            else: st.warning("Aceite os termos para prosseguir.")
+    if st.checkbox("Li e concordo com os termos"):
+        if st.button("IR PARA AGENDA >"):
+            st.session_state.step = 4
+            st.rerun()
 
 # ETAPA 4: AGENDA
 elif st.session_state.step == 4:
-    st.title("Finalizar na Agenda")
-    
-    st.write("Identificação para preencher no Google:")
+    st.title("Finalizar Agendamento")
+    st.write("Preencha este nome no Google:")
     st.markdown(f'<div class="caixa-nome">{st.session_state.nome}</div>', unsafe_allow_html=True)
-    
-    st.markdown(f"""
-    <div class="card">
-    <b>Como proceder:</b><br>
-    1. Clique no botão abaixo para abrir a grade.<br>
-    2. Escolha o horário (**{st.session_state.horario}**) na data desejada.<br>
-    3. Digite seu nome e e-mail para validar.
-    </div>
-    """, unsafe_allow_html=True)
-
     st.link_button("📅 ABRIR AGENDA DO COACH", LINK_AGENDA_REAL)
-
+    
     st.write("---")
-    msg_zap = f"Olá Fábio, sou {st.session_state.nome}. Confirmei meus dados e estou agendando meu horário de {st.session_state.horario} na sua grade oficial!"
-    st.link_button("📱 AVISAR NO WHATSAPP", f"https://wa.me/{MEU_WHATSAPP}?text={urllib.parse.quote(msg_zap)}")
-
-    if st.button("RECOMEÇAR"):
-        st.session_state.step = 1
-        st.rerun()
+    msg = f"Olá Fábio, sou {st.session_state.nome}. Agendei {st.session_state.modalidade} na sua grade!"
+    st.link_button("📱 AVISAR NO WHATSAPP", f"https://wa.me/{MEU_WHATSAPP}?text={urllib.parse.quote(msg)}")
+    if st.button("RECOMEÇAR"): st.session_state.step = 1; st.rerun()
